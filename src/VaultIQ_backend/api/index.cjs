@@ -3,11 +3,11 @@
 
 // vaultiq-backend/api/index.js
 // Handles HTTP requests related to document submission and asset management
+const { callVerifierAPI, uploadToIPFS } = require("./services.cjs");
 
 const express = require("express");
 const multer = require("multer");
 const cors = require("cors");
-const { callVerifierAPI, uploadToIPFS } = require("./services");
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
