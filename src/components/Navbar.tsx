@@ -2,32 +2,36 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Shield, Menu, X, Wallet, Activity } from 'lucide-react';
 import WalletConnectModal from './WalletConnectModal';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [connectedAddress, setConnectedAddress] = useState('');
   const location = useLocation();
 
+  const { publicKey, connected, connect, disconnect, connecting, disconnecting } = useWallet();
+  const { setVisible } = useWalletModal(); // To open the wallet selection modal
+
   const isActive = (path: string) => location.pathname === path;
 
-  const handleConnectWallet = () => {
-    if (isWalletConnected) {
-      // Disconnect wallet
-      setIsWalletConnected(false);
-      setConnectedAddress('');
-    } else {
-      // Open wallet connect modal
-      setIsWalletModalOpen(true);
-    }
-  };
+  // const handleConnectWallet = () => {
+  //   if (isWalletConnected) {
+  //     // Disconnect wallet
+  //     setIsWalletConnected(false);
+  //     setConnectedAddress('');
+  //   } else {
+  //     // Open wallet connect modal
+  //     setIsWalletModalOpen(true);
+  //   }
+  // };
 
   const handleWalletConnect = (walletType: string) => {
     // Simulate wallet connection
-    setIsWalletConnected(true);
-    setConnectedAddress('0x1234...5678');
-    setIsWalletModalOpen(false);
+    // setIsWalletConnected(true);
+    // setConnectedAddress('0x1234...5678');
+    // setIsWalletModalOpen(false);
     
     // In a real app, you would integrate with actual wallet providers here
     console.log(`Connecting to ${walletType}`);
@@ -37,6 +41,28 @@ const Navbar: React.FC = () => {
     if (!address) return '';
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
+
+  //start of code
+  const handleConnectWallet = async () => {
+    if (!connected) {
+      setVisible(true); // Open the modal to select/connect wallet
+    }
+  };
+
+
+    const handleDisconnect = async () => {
+    if (connected) {
+      await disconnect();
+    }
+  };
+
+  if (connecting) {
+    return <button disabled>Connecting...</button>;
+  }
+
+  if (disconnecting) {
+    return <button disabled>Disconnecting...</button>;
+  } 
 
   return (
     <>
@@ -113,14 +139,14 @@ const Navbar: React.FC = () => {
               <button
                 onClick={handleConnectWallet}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                  isWalletConnected
+                  connected
                     ? 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200'
                     : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
                 <Wallet className="h-4 w-4" />
                 <span className="hidden sm:inline">
-                  {isWalletConnected ? formatAddress(connectedAddress) : 'Connect Wallet'}
+                  {connected ? publicKey?.toString() : 'Connect Wallet'}
                 </span>
               </button>
 

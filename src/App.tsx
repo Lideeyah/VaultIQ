@@ -10,6 +10,7 @@ import ActivityLogPage from './pages/ActivityLogPage';
 import ToastContainer from './components/ToastContainer';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProps } from './components/Toast';
+import  WalletContextProvider  from './layout/walletProvider';
 
 function App() {
   const [toasts, setToasts] = useState<ToastProps[]>([]);
@@ -31,16 +32,18 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
+          <WalletContextProvider>
         <Layout>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/create" element={<CreateVaultPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/vault/:id" element={<VaultDetailsPage />} />
-            <Route path="/bridge" element={<BridgePage />} />
-            <Route path="/activity" element={<ActivityLogPage />} />
-          </Routes>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/create" element={<CreateVaultPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/vault/:id" element={<VaultDetailsPage />} />
+              <Route path="/bridge" element={<BridgePage />} />
+              <Route path="/activity" element={<ActivityLogPage />} />
+            </Routes>
         </Layout>
+          </WalletContextProvider>
         <ToastContainer toasts={toasts} onClose={removeToast} />
       </Router>
     </ErrorBoundary>
