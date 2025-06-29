@@ -27,10 +27,10 @@ app.post("/api/assets/submit", upload.single("document"), async (req, res) => {
     const asset = await prisma.asset.create({
       data: {
         fileUrl,
-        metadata: JSON.parse(metadata),
+        metadata: metadata,
         status: aiResponse.status,
         score: aiResponse.score,
-        owner: req.user.wallet,
+        owner: req.user?.wallet || "unknown",
       },
     });
 

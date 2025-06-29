@@ -1,36 +1,51 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Shield, Menu, X, Wallet, Activity } from 'lucide-react';
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import WalletConnectModal from './WalletConnectModal';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const [connectedAddress, setConnectedAddress] = useState('');
   const location = useLocation();
+
+  // Wagmi hooks
+  const { address, isConnected } = useAccount();
+  const { connect, connectors, isPending } = useConnect();
+  const { disconnect } = useDisconnect();
 
   const isActive = (path: string) => location.pathname === path;
 
   const handleConnectWallet = () => {
-    if (isWalletConnected) {
-      // Disconnect wallet
-      setIsWalletConnected(false);
-      setConnectedAddress('');
+    if (isConnected) {
+      // Disconnect wallet using wagmi
+      disconnect();
     } else {
       // Open wallet connect modal
       setIsWalletModalOpen(true);
     }
   };
 
-  const handleWalletConnect = (walletType: string) => {
-    // Simulate wallet connection
-    setIsWalletConnected(true);
-    setConnectedAddress('0x1234...5678');
-    setIsWalletModalOpen(false);
-    
-    // In a real app, you would integrate with actual wallet providers here
-    console.log(`Connecting to ${walletType}`);
+  const handleWalletConnect = async (walletType: string) => {
+    try {
+      // Find the connector based on wallet type
+      const connector = connectors.find(c => {
+        const name = c.name.toLowerCase();
+        if (walletType === 'metamask') return name.includes('metamask');
+        if (walletType === 'walletconnect') return name.includes('walletconnect');
+        if (walletType === 'coinbase') return name.includes('coinbase');
+        return false;
+      });
+
+      if (connector) {
+        await connect({ connector });
+        setIsWalletModalOpen(false);
+      } else {
+        console.error(`Connector for ${walletType} not found`);
+      }
+    } catch (error) {
+      console.error('Failed to connect wallet:', error);
+    }
   };
 
   const formatAddress = (address: string) => {
@@ -49,7 +64,7 @@ const Navbar: React.FC = () => {
                 <Shield className="h-6 w-6 text-white" />
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                VaultAI
+                VaultIQ 
               </span>
             </Link>
 
@@ -112,15 +127,23 @@ const Navbar: React.FC = () => {
             <div className="flex items-center space-x-4">
               <button
                 onClick={handleConnectWallet}
+                disabled={isPending}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                  isWalletConnected
+                  isConnected
                     ? 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200'
+                    : isPending
+                    ? 'bg-gray-400 text-white cursor-not-allowed'
                     : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
                 <Wallet className="h-4 w-4" />
                 <span className="hidden sm:inline">
-                  {isWalletConnected ? formatAddress(connectedAddress) : 'Connect Wallet'}
+                  {isPending 
+                    ? 'Connecting...' 
+                    : isConnected 
+                    ? formatAddress(address || '') 
+                    : 'Connect Wallet'
+                  }
                 </span>
               </button>
 

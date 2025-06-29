@@ -41,7 +41,7 @@ const HomePage: React.FC = () => {
     {
       name: 'Sarah Chen',
       role: 'Real Estate Investor',
-      content: 'VaultAI made tokenizing my property portfolio incredibly simple. The AI verification gave me confidence in the process.',
+      content: 'VaultIQ  made tokenizing my property portfolio incredibly simple. The AI verification gave me confidence in the process.',
       avatar: '👩‍💼'
     },
     {
@@ -246,7 +246,7 @@ const HomePage: React.FC = () => {
             Ready to Tokenize Your Assets?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Join thousands of users who trust VaultAI for secure, AI-verified asset tokenization
+            Join thousands of users who trust VaultIQ  for secure, AI-verified asset tokenization
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

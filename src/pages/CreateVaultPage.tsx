@@ -2,93 +2,73 @@ import React, { useState } from 'react';
 import { Upload, FileText, Image, CheckCircle, AlertTriangle, Loader2, Brain, Shield, Zap, X } from 'lucide-react';
 import SuccessModal from '../components/SuccessModal';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useVaultCreation } from '../hooks/useVaultCreation';
+import { useAssetTypes } from '../hooks/useAssetTypes';
+import { useAccount } from 'wagmi';
 
 const CreateVaultPage: React.FC = () => {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [assetType, setAssetType] = useState('');
-  const [assetName, setAssetName] = useState('');
-  const [assetDescription, setAssetDescription] = useState('');
-  const [aiVerificationStatus, setAiVerificationStatus] = useState('idle');
-  const [aiScore, setAiScore] = useState(0);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
-
-  const assetTypes = [
-    { id: 'real-estate', name: 'Real Estate', icon: '🏠', description: 'Properties, land, buildings' },
-    { id: 'vehicle', name: 'Vehicle', icon: '🚗', description: 'Cars, motorcycles, boats' },
-    { id: 'art', name: 'Art & Collectibles', icon: '🎨', description: 'Artwork, antiques, collectibles' },
-    { id: 'precious-metals', name: 'Precious Metals', icon: '💎', description: 'Gold, silver, jewelry' },
-    { id: 'equipment', name: 'Equipment', icon: '⚙️', description: 'Industrial, medical equipment' },
-    { id: 'other', name: 'Other', icon: '📦', description: 'Other valuable assets' }
-  ];
-
-  const validateStep = (step: number) => {
-    const newErrors: {[key: string]: string} = {};
-
-    switch (step) {
-      case 1:
-        if (!assetType) newErrors.assetType = 'Please select an asset type';
-        if (!assetName.trim()) newErrors.assetName = 'Asset name is required';
-        if (!assetDescription.trim()) newErrors.assetDescription = 'Asset description is required';
-        break;
-      case 2:
-        if (uploadedFiles.length === 0) newErrors.files = 'Please upload at least one file';
-        break;
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    const validFiles = files.filter(file => {
-      const isValidType = file.type.startsWith('image/') || 
-                         file.type === 'application/pdf' ||
-                         file.type.includes('document');
-      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
-      return isValidType && isValidSize;
-    });
+  const [mintResult, setMintResult] = useState<{ tokenId: string; transactionHash: string } | null>(null);
+  const { address, isConnected } = useAccount();
+  
+  const {
+    // State from hook
+    currentStep,
+    uploadedFiles,
+    assetDetails,
+    aiVerificationStatus,
+    aiScore,
+    isLoading,
+    error,
+    errors,
     
-    setUploadedFiles(prev => [...prev, ...validFiles]);
-    setErrors(prev => ({ ...prev, files: '' }));
-  };
+    // Actions from hook
+    handleFileUpload,
+    removeFile,
+    updateAssetDetails,
+    nextStep,
+    previousStep,
+    startAIVerification,
+    mintVaultToken,
+  } = useVaultCreation();
 
-  const removeFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  const { assetTypes } = useAssetTypes();
+
+  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    handleFileUpload(files);
   };
 
   const handleAIVerification = async () => {
-    if (!validateStep(2)) return;
-
-    setIsProcessing(true);
-    setAiVerificationStatus('processing');
-    
-    // Simulate AI verification process with realistic timing
-    setTimeout(() => {
-      const score = Math.floor(Math.random() * 20) + 80; // 80-99% range
-      setAiScore(score);
-      setAiVerificationStatus('completed');
-      setIsProcessing(false);
-      setCurrentStep(3);
-    }, 4000);
+    try {
+      await startAIVerification();
+    } catch (error) {
+      console.error('AI verification failed:', error);
+    }
   };
 
   const handleMintVault = async () => {
-    setIsProcessing(true);
+    if (!isConnected) {
+      alert('Please connect your wallet first');
+      return;
+    }
     
-    // Simulate minting process
-    setTimeout(() => {
-      setIsProcessing(false);
+    try {
+      console.log('Starting mint process...');
+      console.log('Wallet address:', address);
+      console.log('Asset details:', assetDetails);
+      console.log('AI score:', aiScore);
+      console.log('Uploaded files:', uploadedFiles.length);
+      
+      const result = await mintVaultToken();
+      console.log('Mint result:', result);
+      
+      setMintResult(result);
       setShowSuccessModal(true);
-    }, 3000);
-  };
-
-  const handleNextStep = () => {
-    if (validateStep(currentStep)) {
-      setCurrentStep(prev => prev + 1);
+    } catch (error) {
+      console.error('Minting failed:', error);
+      // Show user-friendly error message
+      alert('Failed to mint vault. Please try again or check your wallet connection.');
     }
   };
 
@@ -136,6 +116,28 @@ const CreateVaultPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <div className="flex items-center">
+              <AlertTriangle className="h-5 w-5 text-red-600 mr-3" />
+              <span className="text-red-700">{error}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Wallet Connection Status */}
+        {!isConnected && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+            <div className="flex items-center">
+              <AlertTriangle className="h-5 w-5 text-yellow-600 mr-3" />
+              <span className="text-yellow-700">
+                Please connect your wallet to create vault tokens.
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Step Content */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {/* Step 1: Asset Details */}
@@ -151,12 +153,9 @@ const CreateVaultPage: React.FC = () => {
                   {assetTypes.map((type) => (
                     <button
                       key={type.id}
-                      onClick={() => {
-                        setAssetType(type.id);
-                        setErrors(prev => ({ ...prev, assetType: '' }));
-                      }}
+                      onClick={() => updateAssetDetails('type', type.id)}
                       className={`p-4 rounded-xl border-2 transition-all text-left ${
-                        assetType === type.id
+                        assetDetails.type === type.id
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
@@ -177,11 +176,8 @@ const CreateVaultPage: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Asset Name *</label>
                 <input
                   type="text"
-                  value={assetName}
-                  onChange={(e) => {
-                    setAssetName(e.target.value);
-                    setErrors(prev => ({ ...prev, assetName: '' }));
-                  }}
+                  value={assetDetails.name}
+                  onChange={(e) => updateAssetDetails('name', e.target.value)}
                   placeholder="e.g., Manhattan Luxury Apartment"
                   className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     errors.assetName ? 'border-red-300' : 'border-gray-200'
@@ -196,11 +192,8 @@ const CreateVaultPage: React.FC = () => {
               <div className="mb-8">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Asset Description *</label>
                 <textarea
-                  value={assetDescription}
-                  onChange={(e) => {
-                    setAssetDescription(e.target.value);
-                    setErrors(prev => ({ ...prev, assetDescription: '' }));
-                  }}
+                  value={assetDetails.description}
+                  onChange={(e) => updateAssetDetails('description', e.target.value)}
                   placeholder="Provide a detailed description of your asset..."
                   rows={4}
                   className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
@@ -213,7 +206,7 @@ const CreateVaultPage: React.FC = () => {
               </div>
 
               <button
-                onClick={handleNextStep}
+                onClick={nextStep}
                 className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
               >
                 Continue to Upload
@@ -245,7 +238,7 @@ const CreateVaultPage: React.FC = () => {
                   type="file"
                   multiple
                   accept="image/*,.pdf,.doc,.docx"
-                  onChange={handleFileUpload}
+                  onChange={handleFileInputChange}
                   className="hidden"
                   id="file-upload"
                 />
@@ -336,17 +329,17 @@ const CreateVaultPage: React.FC = () => {
 
               <div className="flex gap-4">
                 <button
-                  onClick={() => setCurrentStep(1)}
+                  onClick={previousStep}
                   className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
                 >
                   Back
                 </button>
                 <button
                   onClick={handleAIVerification}
-                  disabled={uploadedFiles.length === 0 || isProcessing}
+                  disabled={uploadedFiles.length === 0 || isLoading}
                   className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
                 >
-                  {isProcessing ? (
+                  {isLoading ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin mr-2" />
                       Verifying...
@@ -401,11 +394,11 @@ const CreateVaultPage: React.FC = () => {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <div className="text-sm text-gray-600">Asset Name</div>
-                    <div className="font-medium">{assetName}</div>
+                    <div className="font-medium">{assetDetails.name}</div>
                   </div>
                   <div>
                     <div className="text-sm text-gray-600">Asset Type</div>
-                    <div className="font-medium capitalize">{assetType.replace('-', ' ')}</div>
+                    <div className="font-medium capitalize">{assetDetails.type.replace('-', ' ')}</div>
                   </div>
                   <div>
                     <div className="text-sm text-gray-600">Files Uploaded</div>
@@ -418,27 +411,30 @@ const CreateVaultPage: React.FC = () => {
                 </div>
                 <div className="mt-4">
                   <div className="text-sm text-gray-600">Description</div>
-                  <div className="font-medium">{assetDescription}</div>
+                  <div className="font-medium">{assetDetails.description}</div>
                 </div>
               </div>
 
               <div className="flex gap-4">
                 <button
-                  onClick={() => setCurrentStep(2)}
+                  onClick={previousStep}
                   className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
                 >
                   Back
                 </button>
                 <button
                   onClick={handleMintVault}
-                  disabled={isProcessing}
+                  disabled={isLoading || !isConnected}
                   className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed transition-all flex items-center justify-center"
+                  title={!isConnected ? 'Please connect your wallet first' : ''}
                 >
-                  {isProcessing ? (
+                  {isLoading ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                      Minting...
+                      Minting Vault Token...
                     </>
+                  ) : !isConnected ? (
+                    'Connect Wallet to Mint'
                   ) : (
                     'Mint Vault Token'
                   )}
@@ -455,8 +451,8 @@ const CreateVaultPage: React.FC = () => {
         onClose={() => setShowSuccessModal(false)}
         title="Vault Created Successfully!"
         message="Your asset has been tokenized and your vault is now live on the blockchain"
-        tokenId="12847"
-        transactionHash="0x1a2b3c4d5e6f7890abcdef1234567890abcdef1234567890abcdef1234567890"
+        tokenId={mintResult?.tokenId || "N/A"}
+        transactionHash={mintResult?.transactionHash || "N/A"}
         primaryAction={{
           label: "View in Dashboard",
           onClick: () => window.location.href = '/dashboard'
