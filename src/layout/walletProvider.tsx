@@ -1,47 +1,31 @@
-import { FC, ReactNode, useMemo } from 'react';
-import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
-import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import { FC, ReactNode } from 'react';
+import '@rainbow-me/rainbowkit/styles.css';
+import { config } from './wagmi';
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { WagmiProvider } from 'wagmi';
 import {
-    PhantomWalletAdapter,
-    SolflareWalletAdapter,
-} from '@solana/wallet-adapter-wallets';
-import {
-    WalletModalProvider,
-    WalletMultiButton
-} from '@solana/wallet-adapter-react-ui';
-import { clusterApiUrl } from '@solana/web3.js';
-import '@solana/wallet-adapter-react-ui/styles.css';
+  getDefaultConfig,
+  RainbowKitProvider,
+} from '@rainbow-me/rainbowkit';
+
 
 interface WalletContextProviderProps {
-    children: ReactNode;
+  children: ReactNode;
 }
 
+
 const WalletContextProvider: FC<WalletContextProviderProps> = ({ children }) => {
-    const network = WalletAdapterNetwork.Devnet; // Or .MainnetBeta for production
-
-    // You can also provide a custom RPC endpoint here
-    const endpoint = useMemo(() => clusterApiUrl(network), [network]);
-
-    const wallets = useMemo(
-        () => [
-            new PhantomWalletAdapter(),
-            new SolflareWalletAdapter({ network }),
-            // new SolletWalletAdapter({ network }),
-            // new CoinbaseWalletAdapter(),
-            // new BackpackWalletAdapter(),
-        ],
-        [network]
-    );
-
-    return (
-        <ConnectionProvider endpoint={endpoint}>
-            <WalletProvider wallets={wallets} autoConnect> {/* autoConnect tries to reconnect on page load */}
-                <WalletModalProvider>
-                    {children}
-                </WalletModalProvider>
-            </WalletProvider>
-        </ConnectionProvider>
-    );
+  const client = new QueryClient();
+  return (
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={client}>
+        <RainbowKitProvider>
+          {children}
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
+  );
 };
 
 export default WalletContextProvider;

@@ -12,6 +12,8 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProps } from './components/Toast';
 import  WalletContextProvider  from './layout/walletProvider';
 
+
+
 function App() {
   const [toasts, setToasts] = useState<ToastProps[]>([]);
 

@@ -1,39 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Shield, Menu, X, Wallet, Activity } from 'lucide-react';
-import WalletConnectModal from './WalletConnectModal';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+
+import { useAccount, useDisconnect } from 'wagmi';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const [connectedAddress, setConnectedAddress] = useState('');
   const location = useLocation();
 
-  const { publicKey, connected, connect, disconnect, connecting, disconnecting } = useWallet();
-  const { setVisible } = useWalletModal(); // To open the wallet selection modal
+  const { address, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
+
 
   const isActive = (path: string) => location.pathname === path;
 
-  // const handleConnectWallet = () => {
-  //   if (isWalletConnected) {
-  //     // Disconnect wallet
-  //     setIsWalletConnected(false);
-  //     setConnectedAddress('');
-  //   } else {
-  //     // Open wallet connect modal
-  //     setIsWalletModalOpen(true);
-  //   }
-  // };
-
   const handleWalletConnect = (walletType: string) => {
-    // Simulate wallet connection
-    // setIsWalletConnected(true);
-    // setConnectedAddress('0x1234...5678');
-    // setIsWalletModalOpen(false);
-    
-    // In a real app, you would integrate with actual wallet providers here
     console.log(`Connecting to ${walletType}`);
   };
 
@@ -43,26 +26,32 @@ const Navbar: React.FC = () => {
   };
 
   //start of code
-  const handleConnectWallet = async () => {
-    if (!connected) {
-      setVisible(true); // Open the modal to select/connect wallet
+  const handleDisconnect = () => {
+    if (isConnected) {
+      disconnect();
+    }
+  };
+  useEffect(() => {
+  const handleBeforeUnload = () => {
+    if (isConnected) {
+      disconnect();
     }
   };
 
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isConnected, disconnect]);
 
-    const handleDisconnect = async () => {
-    if (connected) {
-      await disconnect();
-    }
-  };
 
-  if (connecting) {
-    return <button disabled>Connecting...</button>;
-  }
+  // if (connecting) {
+  //   return <button disabled>Connecting...</button>;
+  // }
 
-  if (disconnecting) {
-    return <button disabled>Disconnecting...</button>;
-  } 
+  // if (disconnecting) {
+  //   return <button disabled>Disconnecting...</button>;
+  // }
 
   return (
     <>
@@ -136,7 +125,7 @@ const Navbar: React.FC = () => {
 
             {/* Wallet Connection */}
             <div className="flex items-center space-x-4">
-              <button
+              {/* <button
                 onClick={handleConnectWallet}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
                   connected
@@ -148,7 +137,8 @@ const Navbar: React.FC = () => {
                 <span className="hidden sm:inline">
                   {connected ? publicKey?.toString() : 'Connect Wallet'}
                 </span>
-              </button>
+              </button> */}
+              <ConnectButton showBalance={false} />
 
               {/* Mobile menu button */}
               <button
@@ -225,13 +215,6 @@ const Navbar: React.FC = () => {
           )}
         </div>
       </nav>
-
-      {/* Wallet Connect Modal */}
-      <WalletConnectModal
-        isOpen={isWalletModalOpen}
-        onClose={() => setIsWalletModalOpen(false)}
-        onConnect={handleWalletConnect}
-      />
     </>
   );
 };
