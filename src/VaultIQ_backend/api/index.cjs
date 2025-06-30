@@ -30,7 +30,7 @@ app.post("/api/assets/submit", upload.single("document"), async (req, res) => {
         metadata: JSON.parse(metadata),
         status: aiResponse.status,
         score: aiResponse.score,
-        owner: req.user.wallet,
+        owner: req.body.wallet,
       },
     });
 
