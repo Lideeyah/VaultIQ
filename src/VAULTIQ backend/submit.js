@@ -15,3 +15,10 @@ router.post("/submit", upload.single("document"), authMiddleware, async (req, re
 
   res.json({ status: aiResponse.status, score: aiResponse.score });
 });
+
+await axios.post(process.env.CCIP_ENDPOINT, {
+  assetId: asset.id,
+  status: asset.status,
+  score: asset.score,
+});
+
