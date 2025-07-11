@@ -60,10 +60,7 @@ const client = new Web3Storage({ token: process.env.WEB3_STORAGE_KEY });
 import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-export async function callVerifierAPI(fileUrl, metadata) {
-  const prompt = `This document is a \"${metadata.name}\". Describe it, and assign a verification status and confidence score.`;
-
+    
   const response = await openai.chat.completions.create({
     model: "gpt-4-vision-preview",
     messages: [
