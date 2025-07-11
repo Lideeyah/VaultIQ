@@ -1,7 +1,7 @@
 // index.cjs (main server file, assumed entry point)
 import express from "express";
 import multer from "multer";
-import dotenv from "dotenv";
+import { createRequire } from "module";
 import { PrismaClient } from "@prisma/client";
 import { uploadToIPFS } from "./utils/ipfs.js";
 import { callVerifierAPI } from "./utils/verifier.js";
@@ -15,7 +15,9 @@ const __dirname = path.dirname(__filename);
 const prisma = new PrismaClient();
 const app = express();
 const upload = multer();
-dotenv.config();
+const require = createRequire(import.meta.url);
+require("dotenv").config();
+
 
 app.use(cors());
 app.use(express.json());
