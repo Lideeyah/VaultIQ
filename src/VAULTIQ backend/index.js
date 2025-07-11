@@ -1,8 +1,6 @@
 // vaultiq-backend/api/index.js
 //this part handles HTTP requests related to document submission.
 
-
-
 const express = require("express");
 const multer = require("multer");
 const cors = require("cors");
