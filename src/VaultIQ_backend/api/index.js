@@ -84,7 +84,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const status = statusMatch ? statusMatch[1] : "Unverified";
 
   return { score, status };
-}
+
 
 app.listen(PORT, () => {
   console.log(`VaultIQ backend running on http://localhost:${PORT}`);
